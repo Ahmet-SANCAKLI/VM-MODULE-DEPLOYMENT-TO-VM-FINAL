@@ -1,0 +1,136 @@
+{
+  "$schema-template": "2.0.0",
+  "modulesContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {
+              "vmregistryakke": {
+                "username": "vmregistryakke",
+                "password": "v1HH2yTQNwXkqC6lOE98yilD3y3TkTEYjyyi73Wr8i+ACRAGBgrT",
+                "address": "vmregistryakke.azurecr.io"
+              }
+            }
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.1",
+              "createOptions": {}
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.1",
+              "createOptions": {
+                "HostConfig": {
+                  "PortBindings": {
+                    "5671/tcp": [
+                      {
+                        "HostPort": "5671"
+                      }
+                    ],
+                    "8883/tcp": [
+                      {
+                        "HostPort": "8883"
+                      }
+                    ],
+                    "443/tcp": [
+                      {
+                        "HostPort": "443"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "modules": {
+          "SensorModule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "vmregistryakke.azurecr.io/sensormodule:0.0.8-amd64.debug",
+              "createOptions": {
+                "HostConfig": {
+                  "Privileged": true
+                }
+              }
+            }
+          },
+          "modbus": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "vmregistryakke.azurecr.io/modbus:0.0.8-amd64.debug",
+              "createOptions": {
+                "HostConfig": {
+                  "Privileged": true,
+                  "PortBindings": {
+                    "1502/tcp": [
+                      {
+                        "HostPort": "1502"
+                      }
+                    ]
+                  },
+                  "Binds": [
+                    "/home/modbus/logs:/home/moduleuser"
+                  ]
+                }
+              }
+            }
+          },
+          "modbusclientmodule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "vmregistryakke.azurecr.io/modbusclientmodule:0.0.8-amd64.debug",
+              "createOptions": {}
+            }
+          },
+          "analyticmodule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "vmregistryakke.azurecr.io/analyticmodule:0.0.8-amd64.debug",
+              "createOptions": {}
+            }
+          }
+        }
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "routes": {
+          "modbusToIoTHub": "FROM /messages/modules/modbus/outputs/* INTO $upstream",
+          "SensorModuleToIoTHub": "FROM /messages/modules/SensorModule/outputs/* INTO $upstream",
+          "modbusclientmoduleToIoTHub": "FROM /messages/modules/modbusclientmodule/outputs/* INTO $upstream",
+          "analyticmoduleToIoTHub": "FROM /messages/modules/analyticmodule/outputs/* INTO $upstream"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    }
+  }
+}
